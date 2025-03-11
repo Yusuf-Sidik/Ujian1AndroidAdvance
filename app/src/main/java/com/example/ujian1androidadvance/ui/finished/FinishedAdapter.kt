@@ -1,4 +1,4 @@
-package com.example.ujian1androidadvance.ui.upcoming
+package com.example.ujian1androidadvance.ui.finished
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -8,9 +8,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.example.ujian1androidadvance.data.remote.response.ListEventsItem
+import com.example.ujian1androidadvance.databinding.ItemFinishedBinding
 import com.example.ujian1androidadvance.databinding.ItemUpcomingBinding
+import com.example.ujian1androidadvance.ui.upcoming.UpcomingAdapter.Companion.DIFF_CALLBACK
+import com.example.ujian1androidadvance.ui.upcoming.UpcomingAdapter.ViewHolder
 
-class UpcomingAdapter: ListAdapter<ListEventsItem, UpcomingAdapter.ViewHolder>(DIFF_CALLBACK) {
+class FinishedAdapter: ListAdapter<ListEventsItem, FinishedAdapter.ViewHolder>(DIFF_CALLBACK) {
 
     // Interface untuk menangani klik item
     interface OnItemClickCallback {
@@ -21,15 +24,16 @@ class UpcomingAdapter: ListAdapter<ListEventsItem, UpcomingAdapter.ViewHolder>(D
     fun setOnItemClickCallback(onItemClickCallback: OnItemClickCallback) {
         this.onItemClickCallback = onItemClickCallback
     }
-    class ViewHolder(val binding: ItemUpcomingBinding): RecyclerView.ViewHolder(binding.root) {
+
+    class ViewHolder(val binding: ItemFinishedBinding): RecyclerView.ViewHolder(binding.root) {
         fun bind(listEventsItem: ListEventsItem){
-            binding.tvName.text = listEventsItem.name
-            binding.tvJam.text = "Jam : ${listEventsItem.beginTime} - ${listEventsItem.endTime}"
-            binding.tvKategori.text = "Kategori : ${listEventsItem.category} . ${listEventsItem.cityName}"
-            Glide.with(binding.imageView3.context)
-                .load(listEventsItem.mediaCover)
-                .transform(RoundedCorners(16))
-                .into(binding.imageView3)
+            binding.ownerTextView.text = listEventsItem.ownerName
+            binding.titleTextView.text = listEventsItem.name
+            binding.textView3.text = "${listEventsItem.category} - ${listEventsItem.cityName}"
+            Glide.with(binding.imgPoster.context)
+                .load(listEventsItem.imageLogo)
+                .transform(RoundedCorners(8))
+                .into(binding.imgPoster)
         }
     }
 
@@ -42,19 +46,7 @@ class UpcomingAdapter: ListAdapter<ListEventsItem, UpcomingAdapter.ViewHolder>(D
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemUpcomingBinding.inflate(LayoutInflater.from(parent.context),parent,false)
+        val binding = ItemFinishedBinding.inflate(LayoutInflater.from(parent.context),parent,false)
         return ViewHolder(binding)
-    }
-
-    companion object{
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ListEventsItem>(){
-            override fun areContentsTheSame(oldItem: ListEventsItem, newItem: ListEventsItem): Boolean {
-                return oldItem == newItem
-            }
-
-            override fun areItemsTheSame(oldItem: ListEventsItem, newItem: ListEventsItem): Boolean {
-                return oldItem == newItem
-            }
-        }
     }
 }
