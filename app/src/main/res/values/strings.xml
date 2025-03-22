@@ -17,4 +17,7 @@
     <string name="dicoding_event">Dicoding Event</string>
     <string name="finished_event">Event yang sudah selesai</string>
     <string name="save_favorite">Save Favorite?</string>
+    <string name="type_something">Cari...</string>
+    <string name="remaining_quota">Remaining quota: %1$s</string>
+    <string name="organized_by">Organized by: %1$s</string>
 </resources>

@@ -4,18 +4,18 @@ import android.os.Parcelable
 import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
 
-
+@Parcelize
 data class UpcomingResponse(
 
 	@field:SerializedName("listEvents")
-	val listEvents: List<ListEventsItem>,
+	val listEvents: List<ListEventsItem>? = null,
 
 	@field:SerializedName("error")
-	val error: Boolean,
+	val error: Boolean? = null,
 
 	@field:SerializedName("message")
-	val message: String
-)
+	val message: String? = null
+) : Parcelable
 
 @Parcelize
 data class ListEventsItem(

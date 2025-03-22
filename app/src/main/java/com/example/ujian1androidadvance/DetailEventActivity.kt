@@ -1,52 +1,99 @@
 package com.example.ujian1androidadvance
 
-import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.Html
-import android.widget.Toast
+import android.text.method.LinkMovementMethod
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.text.HtmlCompat
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.lifecycle.ViewModelProvider
+import com.android.newsapp.utils.DateFormatter.formatDate
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.example.ujian1androidadvance.data.remote.response.ListEventsItem
+import com.example.ujian1androidadvance.data.local.entity.EventEntity
 import com.example.ujian1androidadvance.databinding.ActivityDetailEventBinding
-import com.example.ujian1androidadvance.ui.upcoming.UpcomingFragment
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 class DetailEventActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDetailEventBinding
+    private lateinit var viewModel: MainViewModel
 
-    companion object {
-        const val EXTRA_EVENT = "extra_event"
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDetailEventBinding.inflate(layoutInflater)
         setContentView(binding.root)
         supportActionBar?.hide()
 
-        // Ambil data dari Intent
-        val event = intent.getParcelableExtra<ListEventsItem>(EXTRA_EVENT)
+        val factory = MainViewModelFactory.getInstance(this)
+        viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
-        // Periksa apakah data ada
-        if (event != null) {
-            // Gunakan data untuk menampilkan detail event
-            binding.tvName.text = event.name
-            binding.tvJam.text = "Jam : ${event.beginTime} - ${event.endTime}"
-            binding.tvKategori.text = "Kategori : ${event.category}"
-            binding.tvTempat.text = "Tempat : ${event.cityName}"
-            binding.tvDescription.text = event.description?.let { HtmlCompat.fromHtml(it, HtmlCompat.FROM_HTML_MODE_LEGACY) }
-            Glide.with(binding.imgPoster.context)
-                .load(event.mediaCover)
-                .transform(RoundedCorners(16))
-                .into(binding.imgPoster)
-        }
+        val event = intent.getParcelableExtra<EventEntity>("EXTRA_EVENT")
 
-        binding.imgBack.setOnClickListener {
-            finish()
+        event?.let { e ->
+            binding.apply {
+                // menginisialisasi ikon favorite
+                updateFavoriteIcon(e.isFavorite)
+
+                titleTextView.text = event.name
+                ownerTextView.text = getString(R.string.organized_by, e.ownerName)
+                remainingQuotaTextView.text =
+                    getString(R.string.remaining_quota, e.quota.toString())
+                beginTimeTextView.text = formatDate(event.beginTime)
+                summaryTextView.text = event.summary
+                descriptionTextView.text =
+                    Html.fromHtml(event.description, Html.FROM_HTML_MODE_COMPACT)
+                descriptionTextView.movementMethod = LinkMovementMethod.getInstance()
+                Glide.with(this@DetailEventActivity)
+                    .load(event.mediaCover)
+                    .into(imageView)
+
+                favoriteFab.setOnClickListener {
+                    // mengalihkan status favorite
+                    e.isFavorite = !(e.isFavorite ?: false)
+
+                    // update ikon favorite
+                    updateFavoriteIcon(e.isFavorite)
+
+                    // simpan atau hapus dari database
+                    if (e.isFavorite == true) {
+                        viewModel.saveEvents(e)
+                    } else {
+                        viewModel.deleteEvents(e)
+                    }
+                }
+
+                // action untuk tombol website
+                webpageFab.setOnClickListener {
+                    val builder = CustomTabsIntent.Builder()
+                    val customTabsIntent = builder.build()
+                    customTabsIntent.launchUrl(this@DetailEventActivity, Uri.parse(event.link))
+                }
+            }
         }
-        binding.btnRegister.setOnClickListener {
-            Toast.makeText(this, "Anda berhasil mendaftar", Toast.LENGTH_SHORT).show()
+    }
+    private fun formatDate(dateString: String?): String? {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+        val date = dateString?.let { inputFormat.parse(it) }
+        return date?.let { outputFormat.format(it) }
+    }
+
+    private fun updateFavoriteIcon(isFavorite: Boolean?) {
+        binding.favoriteFab.setImageResource(
+            if (isFavorite == true) R.drawable.ic_favorite else R.drawable.ic_favorite_border
+        )
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                finish()
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
         }
     }
 }

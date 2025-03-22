@@ -9,37 +9,21 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 @Entity(tableName = "events")
 data class EventEntity(
-    @PrimaryKey(autoGenerate = true)
-    @field:ColumnInfo(name = "id")
-    var id: Int ,
-
-    @field:ColumnInfo(name = "name")
+    @PrimaryKey val id: Int?,
     var name: String? = null,
-
-    @field:ColumnInfo(name = "description")
-    var description: String? = null,
-
-    @field:ColumnInfo(name = "image")
-    var image: String? = null,
-
-    @field:ColumnInfo(name = "beginTime")
-    var beginTime: String? = null,
-
-    @field:ColumnInfo(name = "endTime")
-    var endTime: String? = null,
-
-    @field:ColumnInfo(name = "isFavorite")
-    var isFavorite: Boolean,
-
-    @field:ColumnInfo(name = "summary")
-    var summary: String? = null,
-
-    @field:ColumnInfo(name = "ownerName")
-    var ownerName: String? = null,
-
-    @field:ColumnInfo(name = "mediaCover")
-    var mediaCover: String? = null,
-
-    @field:ColumnInfo(name = "imageLogo")
-    var imageLogo: String? = null
+    val summary: String?,
+    val description: String?,
+    val imageLogo: String?,
+    val mediaCover: String?,
+    val category: String?,
+    val ownerName: String?,
+    val cityName: String?,
+    val quota: Int?,
+    val registrants: Int?,
+    val beginTime: String?,
+    val endTime: String?,
+    val link: String?,
+    var isFavorite: Boolean?,
+    var isUpcoming: Boolean?,
+    var isFinished: Boolean?,
 ) : Parcelable

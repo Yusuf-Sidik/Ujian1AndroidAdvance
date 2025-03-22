@@ -51,23 +51,21 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.activity)
+
+    //testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
     //datastore
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.coroutines.android)
-
-    //coroutine support
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.room.ktx)
 
     //room
+    ksp(libs.room.compiler)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.browser)
     implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
 
     //retrofit
     implementation(libs.retrofit)
@@ -76,7 +74,4 @@ dependencies {
 
     //glide
     implementation(libs.glide)
-
-    //shimmer
-    implementation(libs.shimmer)
 }

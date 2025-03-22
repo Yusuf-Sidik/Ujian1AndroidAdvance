@@ -1,32 +1,59 @@
 package com.example.ujian1androidadvance.data.local.room
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 import com.example.ujian1androidadvance.data.local.entity.EventEntity
 
 @Dao
 interface DicodingDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun insert(events: EventEntity)
+    @Query("SELECT * FROM events WHERE isUpcoming = 1")
+    fun getUpcomingEvents(): LiveData<List<EventEntity>>
 
-    @Delete
-    fun delete(events: EventEntity)
+    @Query("SELECT * FROM events WHERE isFinished = 1")
+    fun getFinishedEvents(): LiveData<List<EventEntity>>
+
+    @Query("SELECT * FROM events WHERE isFavorite = 1")
+    fun getFavoriteEvents(): LiveData<List<EventEntity>>
+
+
+    @Query("""
+     SELECT * FROM events 
+     WHERE isFinished = 1
+     AND (
+         name LIKE '%' || :query || '%' OR 
+         summary LIKE '%' || :query || '%' OR 
+         description LIKE '%' || :query || '%' OR 
+         category LIKE '%' || :query || '%' OR 
+         ownerName LIKE '%' || :query || '%'
+         )
+     """)
+    fun searchFinishedEvents(query: String): LiveData<List<EventEntity>>
+
+
+    @Query("""
+     SELECT * FROM events 
+     WHERE isFavorite = isFavorite
+     AND (
+         name LIKE '%' || :query || '%' OR 
+         summary LIKE '%' || :query || '%' OR 
+         description LIKE '%' || :query || '%' OR 
+         category LIKE '%' || :query || '%' OR 
+         ownerName LIKE '%' || :query || '%'
+         )
+     """)
+
+    fun searchFavoriteEvents(query: String): LiveData<List<EventEntity>>
+
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEvents(events: List<EventEntity>)
 
     @Update
-    fun update(events: EventEntity)
+    suspend fun updateEvents(events: EventEntity)
 
-    @Query("SELECT * from events ORDER BY id ASC")
-    fun getAllEvents(): LiveData<List<EventEntity>>
+    @Query("DELETE FROM events WHERE isFavorite = 0")
+    suspend fun deleteAll()
 
+    @Query("SELECT EXISTS(SELECT * FROM events WHERE name = :name AND isFavorite = 1)")
+    suspend fun isEventFavorite(name: String): Boolean
 }
-
-//    @Query("SELECT EXISTS(SELECT 1 FROM events WHERE id = :eventId)")
-//    fun isEventFavorited(eventId: Int): LiveData<Boolean>
-//
-//    @Query("SELECT * FROM events WHERE isFavorite = 1")
-//    fun getFavoriteEvents(): LiveData<List<EventEntity>>

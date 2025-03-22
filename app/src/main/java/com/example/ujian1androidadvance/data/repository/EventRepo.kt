@@ -1,117 +1,144 @@
 package com.example.ujian1androidadvance.data.repository
 
-import android.app.Application
 import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.map
 import com.android.newsapp.utils.AppExecutors
 import com.example.ujian1androidadvance.data.local.entity.EventEntity
 import com.example.ujian1androidadvance.data.local.room.DicodingDao
-import com.example.ujian1androidadvance.data.local.room.DicodingRoomDatabases
-import com.example.ujian1androidadvance.data.remote.response.ListEventsItem
-import com.example.ujian1androidadvance.data.remote.response.UpcomingResponse
-import com.example.ujian1androidadvance.data.remote.retrofit.ApiConfig
 import com.example.ujian1androidadvance.data.remote.retrofit.ApiService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
-class EventRepo(application: Application) {
-    private val mEventsDao: DicodingDao
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
-    private val apiService = ApiConfig.getApiService()
-
-    init {
-        val db = DicodingRoomDatabases.getInstance(application)
-        mEventsDao = db.dicodingDao()
+class EventRepo private constructor(
+    private val apiService: ApiService,
+    private val dicodingDao: DicodingDao,
+    private val appExecutors: AppExecutors
+) {
+    fun getUpcomingEvents(): LiveData<Result<List<EventEntity>>> = liveData {
+        emit(Result.Loading)
+        try {
+            val response = apiService.getEvents(active = 1)
+            val events = response.listEvents
+            val eventList = events?.map { event ->
+                val isFavorite = event.name?.let { dicodingDao.isEventFavorite(it) }
+                val isUpcoming = true
+                val isFinished = false
+                EventEntity(
+                    event.id,
+                    event.name,
+                    event.summary,
+                    event.description,
+                    event.imageLogo,
+                    event.mediaCover,
+                    event.category,
+                    event.ownerName,
+                    event.cityName,
+                    event.quota,
+                    event.registrants,
+                    event.beginTime,
+                    event.endTime,
+                    event.link,
+                    isFavorite,
+                    isUpcoming,
+                    isFinished,
+                )
+            }
+//            eventDao.deleteAll()
+            eventList?.let { dicodingDao.insertEvents(it) }
+        } catch (e: Exception) {
+            Log.d("EventRepository", "getEvents: ${e.message.toString()} ")
+            emit(Result.Error(e.message.toString()))
+        }
+        val localData: LiveData<Result<List<EventEntity>>> =
+            dicodingDao.getUpcomingEvents().map { Result.Success(it) }
+        emitSource(localData)
     }
 
-    fun findUpcomingEvents(): LiveData<Result<List<EventEntity>>> = mEventsDao.getAllEvents().map { Result.Success(it) }
-
-    fun findFinishedEvents(): LiveData<Result<List<EventEntity>>> = mEventsDao.getAllEvents().map { Result.Success(it) }
-
-    fun insert(events: EventEntity) {
-        executorService.execute { mEventsDao.insert(events) }
+    fun getFinishedEvents(): LiveData<Result<List<EventEntity>>> = liveData {
+        emit(Result.Loading)
+        try {
+            val response = apiService.getEvents(active = 0)
+            val events = response.listEvents
+            val eventList = events?.map { event ->
+                val isFavorite = event.name?.let { dicodingDao.isEventFavorite(it) }
+                val isUpcoming = false
+                val isFinished = true
+                EventEntity(
+                    event.id,
+                    event.name,
+                    event.summary,
+                    event.description,
+                    event.imageLogo,
+                    event.mediaCover,
+                    event.category,
+                    event.ownerName,
+                    event.cityName,
+                    event.quota,
+                    event.registrants,
+                    event.beginTime,
+                    event.endTime,
+                    event.link,
+                    isFavorite,
+                    isUpcoming,
+                    isFinished,
+                )
+            }
+//            eventDao.deleteAll()
+            eventList?.let { dicodingDao.insertEvents(it) }
+        } catch (e: Exception) {
+            Log.d("EventRepository", "getEvents: ${e.message.toString()} ")
+            emit(Result.Error(e.message.toString()))
+        }
+        val localData: LiveData<Result<List<EventEntity>>> =
+            dicodingDao.getFinishedEvents().map { Result.Success(it) }
+        emitSource(localData)
     }
 
-    fun delete(events: EventEntity) {
-        executorService.execute { mEventsDao.delete(events) }
+    fun getFavoriteEvents(): LiveData<List<EventEntity>> {
+        return dicodingDao.getFavoriteEvents()
     }
 
-    fun update(events: EventEntity) {
-        executorService.execute { mEventsDao.update(events) }
+    suspend fun setFavoriteEvents(events: EventEntity, favorite: Boolean) {
+        events.isFavorite = favorite
+        dicodingDao.updateEvents(events)
+
     }
 
+    fun searchFinishedEvents(query: String): LiveData<Result<List<EventEntity>>> = liveData {
+        emit(Result.Loading)
+        try {
+            val localData: LiveData<Result<List<EventEntity>>> =
+                dicodingDao.searchFinishedEvents(query).map { Result.Success(it) }
+            emitSource(localData)
+        } catch (e: Exception) {
+            emit(Result.Error(e.message.toString()))
+        }
+    }
+
+    fun searchFavoriteEvents(query: String): LiveData<Result<List<EventEntity>>> = liveData {
+        emit(Result.Loading)
+        try {
+            val localData: LiveData<Result<List<EventEntity>>> =
+                dicodingDao.searchFavoriteEvents(query).map { Result.Success(it) }
+            emitSource(localData)
+        } catch (e: Exception) {
+            emit(Result.Error(e.message.toString()))
+        }
+    }
+
+    companion object {
+        @Volatile
+        private var instance: EventRepo? = null
+        fun getInstance(
+            apiService: ApiService,
+            eventDao: DicodingDao,
+            appExecutors: AppExecutors
+        ): EventRepo = instance ?: synchronized(this) {
+            instance ?: EventRepo(
+                apiService,
+                eventDao,
+                appExecutors
+            )
+        }.also { instance = it }
+    }
 }
-
-
-//    fun insert(events: EventEntity) {
-//        appExecutors.diskIO.execute { mEventsDao.insert(events) }
-//    }
-//
-//    fun delete(events: EventEntity) {
-//        appExecutors.diskIO.execute { mEventsDao.delete(events) }
-//    }
-//
-//    fun getAllEvents(): LiveData<List<EventEntity>> = mEventsDao.getAllEvents()
-//
-//    fun isEventFavorited(eventId: Int): LiveData<Boolean> = mEventsDao.isEventFavorited(eventId)
-//
-//    fun getFavoriteEvents(): LiveData<List<EventEntity>> = mEventsDao.getFavoriteEvents()
-//
-//    fun findFinishedEvents(eventList: MutableLiveData<List<ListEventsItem>>, isLoading: MutableLiveData<Boolean>) {
-//        isLoading.value = true
-//        val client = apiService.getFinishedEvents()
-//        client.enqueue(object : Callback<UpcomingResponse> {
-//            override fun onResponse(
-//                call: Call<UpcomingResponse>,
-//                response: Response<UpcomingResponse>
-//            ) {
-//                isLoading.value = false
-//                if (response.isSuccessful) {
-//                    val responseBody = response.body()
-//                    if (responseBody != null) {
-//                        eventList.value = responseBody.listEvents
-//                    }
-//                } else {
-//                    Log.e("EventsRepository", "onFailure: ${response.message()}")
-//                }
-//            }
-//
-//            override fun onFailure(call: Call<UpcomingResponse>, t: Throwable) {
-//                isLoading.value = false
-//                Log.e("EventsRepository", "onFailure: ${t.message}")
-//            }
-//        })
-//    }
-//
-//    fun findUpcomingEvents(eventList: MutableLiveData<List<ListEventsItem>>, isLoading: MutableLiveData<Boolean>) {
-//        isLoading.value = true
-//        val client = apiService.getUpcomingEvents()
-//        client.enqueue(object : Callback<UpcomingResponse> {
-//            override fun onResponse(
-//                call: Call<UpcomingResponse>,
-//                response: Response<UpcomingResponse>
-//            ) {
-//                isLoading.value = false
-//                if (response.isSuccessful) {
-//                    val responseBody = response.body()
-//                    if (responseBody != null) {
-//                        eventList.value = responseBody.listEvents
-//                    }
-//                } else {
-//                    Log.e("EventsRepository", "onFailure: ${response.message()}")
-//                }
-//            }
-//
-//            override fun onFailure(call: Call<UpcomingResponse>, t: Throwable) {
-//                isLoading.value = false
-//                Log.e("EventsRepository", "onFailure: ${t.message}")
-//            }
-//        })
-//    }
